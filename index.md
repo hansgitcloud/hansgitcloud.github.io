@@ -1,4 +1,6 @@
-## Welcome to 黄松 Pages
+## 第一次记录自己的博客.
+
+Welcome to 黄松 Pages
 
 第一次记录自己的博客.
 
