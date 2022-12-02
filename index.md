@@ -1,6 +1,6 @@
 ## 第一次记录自己的博客.
 
-Welcome to 黄松 Pages
+Welcome to My Pages
 
 第一次记录自己的博客.
 
