@@ -1376,6 +1376,13 @@ function escHtml(str) {
   return d.innerHTML;
 }
 
+function formatLocalDate(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 function startHolidayEdit(index) {
   holidayEditingIdx = index;
   renderHolidayList();
@@ -1419,7 +1426,7 @@ function saveHolidayEdit(index) {
   const cur = new Date(start + 'T00:00:00');
   const endDt = new Date(end + 'T00:00:00');
   while (cur <= endDt) {
-    dates.push(cur.toISOString().slice(0, 10));
+    dates.push(formatLocalDate(cur));
     cur.setDate(cur.getDate() + 1);
   }
 
@@ -1449,7 +1456,7 @@ function addHoliday() {
   const cur = new Date(start + 'T00:00:00');
   const endDt = new Date(end + 'T00:00:00');
   while (cur <= endDt) {
-    dates.push(cur.toISOString().slice(0, 10));
+    dates.push(formatLocalDate(cur));
     cur.setDate(cur.getDate() + 1);
   }
 
