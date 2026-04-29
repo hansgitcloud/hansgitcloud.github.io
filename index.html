@@ -188,6 +188,30 @@
   .progress-bar.warn .seg-remote { background: var(--color-red); }
   .progress-bar.caution .seg-remote { background: var(--color-yellow); }
 
+  /* Target marker line (vertical line showing office ratio target) */
+  .progress-bar .target-line {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: rgba(255,255,255,0.9);
+    z-index: 2;
+    pointer-events: none;
+    box-shadow: 0 0 3px rgba(0,0,0,0.3);
+  }
+  /* Wrapper that adds space for the target label above progress bar */
+  .progress-wrapper {
+    position: relative;
+    padding-top: 14px;
+  }
+  .progress-wrapper .target-label {
+    position: absolute;
+    top: 0;
+    font-size: 10px;
+    color: var(--color-text-secondary);
+    transform: translateX(-50%);
+  }
+
   .stat-numbers {
     display: flex;
     gap: 16px;
@@ -212,12 +236,14 @@
   .dot-leave { background: var(--color-orange); }
   .dot-unmarked { background: var(--color-gray); }
 
-  .remote-remaining {
+  .remote-remaining,
+  .week-info {
     margin-top: 8px;
     font-size: 13px;
     color: var(--color-text-secondary);
   }
-  .remote-remaining strong {
+  .remote-remaining strong,
+  .week-info strong {
     color: var(--color-text);
   }
 
@@ -671,15 +697,22 @@
           <span class="stat-card-title">📊 本周统计</span>
           <span class="stat-card-summary" id="weekSummary"></span>
         </div>
-        <div class="progress-bar" id="weekProgress"></div>
+        <div class="progress-wrapper" id="weekProgressWrapper">
+          <span class="target-label" id="weekTargetLabel"></span>
+          <div class="progress-bar" id="weekProgress"></div>
+        </div>
         <div class="stat-numbers" id="weekNumbers"></div>
+        <div class="week-info" id="weekInfo"></div>
       </div>
       <div class="stat-card" id="monthStats">
         <div class="stat-card-header">
           <span class="stat-card-title">📈 本月统计</span>
           <span class="stat-card-summary" id="monthSummary"></span>
         </div>
-        <div class="progress-bar" id="monthProgress"></div>
+        <div class="progress-wrapper" id="monthProgressWrapper">
+          <span class="target-label" id="monthTargetLabel"></span>
+          <div class="progress-bar" id="monthProgress"></div>
+        </div>
         <div class="stat-numbers" id="monthNumbers"></div>
         <div class="remote-remaining" id="remoteRemaining"></div>
       </div>
@@ -970,12 +1003,12 @@ function calcStats(year, month) {
 }
 
 function calcWeekStats(year, month, weekStartDay) {
-  // weekStartDay: the Monday of the week (can be in prev/next month)
+  // weekStartDay: the Monday of the week (day-of-month)
+  // year, month: the year and month of the monday (may cross month boundaries)
   let totalWorkdays = 0, office = 0, remote = 0, leave = 0, unmarked = 0;
 
   for (let i = 0; i < 7; i++) {
-    const d = new Date(weekStartDay);
-    d.setDate(d.getDate() + i);
+    const d = new Date(year, month, weekStartDay + i);
     const y = d.getFullYear(), m = d.getMonth(), day = d.getDate();
     if (!isWorkday(y, m, day)) continue;
     totalWorkdays++;
@@ -1013,6 +1046,9 @@ function renderStats() {
 
   // Month stats
   const ms = calcStats(y, m);
+  const monthTarget = Math.ceil(ms.totalWorkdays * (state.config.officeRatio / 100));
+  document.getElementById('monthTargetLabel').textContent = `到岗目标 ${state.config.officeRatio}%`;
+  document.getElementById('monthTargetLabel').style.left = state.config.officeRatio + '%';
   renderProgressBar('monthProgress', ms, 'month');
   document.getElementById('monthNumbers').innerHTML = `
     <span class="stat-num"><span class="stat-dot dot-office"></span>到岗 ${ms.office}天</span>
@@ -1053,13 +1089,30 @@ function renderStats() {
   }
   const monday = getMondayOfWeek(y, m, targetDay);
   const ws = calcWeekStats(monday.getFullYear(), monday.getMonth(), monday.getDate());
+
+  // Calculate target office days for the week (ceil)
+  const targetOffice = Math.ceil(ws.totalWorkdays * (state.config.officeRatio / 100));
+  document.getElementById('weekTargetLabel').textContent = `到岗目标 ${state.config.officeRatio}%`;
+  document.getElementById('weekTargetLabel').style.left = state.config.officeRatio + '%';
   renderProgressBar('weekProgress', ws, 'week');
+  const mondayStr = `${monday.getMonth()+1}/${monday.getDate()}`;
+  const sundayStr = (() => { const s = new Date(monday); s.setDate(monday.getDate()+6); return `${s.getMonth()+1}/${s.getDate()}`; })();
+
   document.getElementById('weekNumbers').innerHTML = `
-    <span class="stat-num"><span class="stat-dot dot-office"></span>到岗 ${ws.office}天</span>
-    <span class="stat-num"><span class="stat-dot dot-remote"></span>居家 ${ws.remote}天</span>
+    <span class="stat-num"><span class="stat-dot dot-office"></span>到岗 ${ws.office}/${targetOffice}天</span>
+    <span class="stat-num"><span class="stat-dot dot-remote"></span>居家 ${ws.remote}/${ws.maxRemote}天</span>
     <span class="stat-num"><span class="stat-dot dot-leave"></span>请假 ${ws.leave}天</span>
     <span class="stat-num"><span class="stat-dot dot-unmarked"></span>待标记 ${ws.unmarked}天</span>
   `;
+
+  // Add week date range and target info below numbers
+  const weekInfoEl = document.getElementById('weekInfo');
+  if (ws.totalWorkdays === 0) {
+    weekInfoEl.innerHTML = `${mondayStr}-${sundayStr} | 本周无工作日`;
+  } else {
+    const officeDone = ws.office >= targetOffice;
+    weekInfoEl.innerHTML = `${mondayStr}-${sundayStr} | 共${ws.totalWorkdays}个工作日，到岗目标<strong style="color:${officeDone ? 'var(--color-green)' : 'var(--color-text)'}">${targetOffice}天</strong>`;
+  }
 
   const weekSumEl = document.getElementById('weekSummary');
   if (ws.ratioStatus === 'warn') {
@@ -1086,6 +1139,9 @@ function renderProgressBar(containerId, stats, type) {
   const lp = stats.leave / total * 100;
   const up = stats.unmarked / total * 100;
 
+  // Calculate target line position (office ratio)
+  const targetPct = state.config.officeRatio;
+
   el.className = 'progress-bar';
   if (stats.ratioStatus === 'warn') el.classList.add('warn');
   else if (stats.ratioStatus === 'caution') el.classList.add('caution');
@@ -1095,6 +1151,8 @@ function renderProgressBar(containerId, stats, type) {
   if (stats.remote > 0) html += `<div class="seg seg-remote" style="width:${rp}%">${rp >= 12 ? '🏠 ' + stats.remote : ''}</div>`;
   if (stats.leave > 0) html += `<div class="seg seg-leave" style="width:${lp}%">${lp >= 12 ? '📝 ' + stats.leave : ''}</div>`;
   if (stats.unmarked > 0) html += `<div class="seg seg-unmarked" style="width:${up}%">${up >= 12 ? '· ' + stats.unmarked : ''}</div>`;
+  // Target marker line
+  html += `<div class="target-line" style="left:${targetPct}%"></div>`;
   el.innerHTML = html;
 }
 
