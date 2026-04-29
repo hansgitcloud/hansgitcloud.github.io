@@ -1,0 +1,1598 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hybrid Work Calendar - 混合办公日历</title>
+<style>
+  /* ===== CSS Variables ===== */
+  :root {
+    --color-bg: #f5f7fa;
+    --color-surface: #ffffff;
+    --color-primary: #3b82f6;
+    --color-primary-light: #dbeafe;
+    --color-green: #22c55e;
+    --color-green-light: #dcfce7;
+    --color-red: #ef4444;
+    --color-red-light: #fee2e2;
+    --color-orange: #f97316;
+    --color-orange-light: #ffedd5;
+    --color-yellow: #eab308;
+    --color-yellow-light: #fef9c3;
+    --color-gray: #9ca3af;
+    --color-gray-light: #f3f4f6;
+    --color-gray-dark: #4b5563;
+    --color-text: #1f2937;
+    --color-text-secondary: #6b7280;
+    --color-border: #e5e7eb;
+    --color-today-ring: #6366f1;
+    --radius: 8px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+    --shadow-lg: 0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.06);
+    --transition: 150ms ease;
+  }
+
+  /* ===== Reset ===== */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--color-bg);
+    color: var(--color-text);
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  /* ===== Layout ===== */
+  .app {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 16px;
+  }
+  @media (min-width: 768px) {
+    .app { padding: 24px 32px; }
+  }
+
+  /* ===== Header ===== */
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .header-left h1 {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--color-text);
+  }
+  .header-left .logo { font-size: 24px; }
+  .header-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .year-select {
+    padding: 6px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    font-size: 14px;
+    background: var(--color-surface);
+    color: var(--color-text);
+    cursor: pointer;
+  }
+
+  /* ===== Buttons ===== */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 14px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    background: var(--color-surface);
+    color: var(--color-text);
+    font-size: 13px;
+    cursor: pointer;
+    transition: all var(--transition);
+    white-space: nowrap;
+    user-select: none;
+  }
+  .btn:hover { background: var(--color-gray-light); }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary {
+    background: var(--color-primary);
+    color: white;
+    border-color: var(--color-primary);
+  }
+  .btn-primary:hover { background: #2563eb; }
+  .btn-sm { padding: 4px 10px; font-size: 12px; }
+  .btn-icon {
+    padding: 6px;
+    min-width: 32px;
+    justify-content: center;
+  }
+
+  /* ===== Stats Panel ===== */
+  .stats-panel {
+    background: var(--color-surface);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 16px 20px;
+    margin-bottom: 20px;
+  }
+  .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  @media (min-width: 640px) {
+    .stats-grid { grid-template-columns: 1fr 1fr; }
+  }
+  .stat-card {
+    padding: 12px 16px;
+    border-radius: var(--radius);
+    background: var(--color-gray-light);
+  }
+  .stat-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .stat-card-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .stat-card-summary {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+  }
+  .stat-card-summary .warn { color: var(--color-red); font-weight: 600; }
+  .stat-card-summary .caution { color: var(--color-yellow); font-weight: 600; }
+  .stat-card-summary .ok { color: var(--color-green); font-weight: 600; }
+
+  .progress-bar {
+    height: 20px;
+    border-radius: 10px;
+    background: var(--color-border);
+    overflow: hidden;
+    display: flex;
+    position: relative;
+  }
+  .progress-bar .seg {
+    height: 100%;
+    transition: width 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: white;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  .seg-office { background: var(--color-primary); }
+  .seg-remote { background: var(--color-green); }
+  .seg-leave { background: var(--color-orange); }
+  .seg-unmarked { background: var(--color-gray); }
+  .progress-bar.warn .seg-remote { background: var(--color-red); }
+  .progress-bar.caution .seg-remote { background: var(--color-yellow); }
+
+  .stat-numbers {
+    display: flex;
+    gap: 16px;
+    margin-top: 8px;
+    flex-wrap: wrap;
+  }
+  .stat-num {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--color-text-secondary);
+  }
+  .stat-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .dot-office { background: var(--color-primary); }
+  .dot-remote { background: var(--color-green); }
+  .dot-leave { background: var(--color-orange); }
+  .dot-unmarked { background: var(--color-gray); }
+
+  .remote-remaining {
+    margin-top: 8px;
+    font-size: 13px;
+    color: var(--color-text-secondary);
+  }
+  .remote-remaining strong {
+    color: var(--color-text);
+  }
+
+  /* ===== Calendar ===== */
+  .calendar-card {
+    background: var(--color-surface);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 16px;
+    margin-bottom: 20px;
+  }
+  .calendar-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .calendar-nav .month-title {
+    font-size: 18px;
+    font-weight: 700;
+  }
+  .calendar-nav .nav-btns {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+  }
+  .calendar-grid .day-header {
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    padding: 8px 0;
+  }
+  .calendar-grid .day-header.weekend { color: var(--color-gray); }
+
+  .day-cell {
+    position: relative;
+    min-height: 56px;
+    border-radius: 6px;
+    border: 2px solid transparent;
+    cursor: pointer;
+    transition: all var(--transition);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 2px;
+    user-select: none;
+  }
+  @media (min-width: 640px) {
+    .day-cell { min-height: 68px; }
+  }
+  .day-cell:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
+  .day-cell:active { transform: scale(0.97); }
+
+  /* Day states */
+  .day-cell.other-month { opacity: 0.35; pointer-events: none; }
+  .day-cell.weekend { background: var(--color-gray-light); }
+  .day-cell.holiday { background: var(--color-red-light); }
+  .day-cell.office { background: var(--color-primary-light); }
+  .day-cell.remote { background: var(--color-green-light); }
+  .day-cell.leave { background: var(--color-orange-light); }
+  .day-cell.unmarked-workday {
+    background: var(--color-surface);
+    border: 2px dashed var(--color-border);
+  }
+  .day-cell.today {
+    border-color: var(--color-today-ring) !important;
+    box-shadow: 0 0 0 2px rgba(99,102,241,0.2);
+  }
+
+  .day-num {
+    font-size: 14px;
+    font-weight: 600;
+    line-height: 1;
+  }
+  .day-icon {
+    font-size: 14px;
+    margin-top: 2px;
+  }
+  .day-label {
+    font-size: 10px;
+    color: var(--color-text-secondary);
+    margin-top: 1px;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: center;
+  }
+  .day-cell.holiday .day-label { color: var(--color-red); font-weight: 600; }
+
+  /* ===== Legend ===== */
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--color-border);
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 12px;
+    color: var(--color-text-secondary);
+  }
+  .legend-color {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+    flex-shrink: 0;
+  }
+
+  /* ===== Quick Actions ===== */
+  .quick-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  /* ===== Modal ===== */
+  .modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.2s ease;
+  }
+  .modal-overlay.active { opacity: 1; visibility: visible; }
+  .modal-overlay.active .modal {
+    transform: translateY(0) scale(1);
+  }
+  .modal {
+    background: var(--color-surface);
+    border-radius: 12px;
+    box-shadow: var(--shadow-lg);
+    width: 90%;
+    max-width: 460px;
+    max-height: 85vh;
+    overflow-y: auto;
+    transform: translateY(20px) scale(0.95);
+    transition: transform 0.2s ease;
+  }
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .modal-header h2 {
+    font-size: 16px;
+    font-weight: 700;
+  }
+  .modal-close {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    border: none;
+    background: var(--color-gray-light);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: var(--color-text-secondary);
+    transition: background var(--transition);
+  }
+  .modal-close:hover { background: var(--color-border); }
+  .modal-body { padding: 20px; }
+  .modal-footer {
+    padding: 12px 20px;
+    border-top: 1px solid var(--color-border);
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  /* ===== Mark Panel ===== */
+  .mark-panel .mode-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .mode-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 8px;
+    border: 2px solid var(--color-border);
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: all var(--transition);
+    background: var(--color-surface);
+  }
+  .mode-option:hover { border-color: var(--color-gray); }
+  .mode-option.active-office { border-color: var(--color-primary); background: var(--color-primary-light); }
+  .mode-option.active-remote { border-color: var(--color-green); background: var(--color-green-light); }
+  .mode-option.active-leave { border-color: var(--color-orange); background: var(--color-orange-light); }
+  .mode-option .mode-icon { font-size: 24px; }
+  .mode-option .mode-name { font-size: 12px; font-weight: 600; }
+
+  .note-input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    font-size: 13px;
+    resize: vertical;
+    min-height: 60px;
+    font-family: inherit;
+    transition: border-color var(--transition);
+  }
+  .note-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+  }
+  .note-label {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    display: block;
+  }
+
+  /* ===== Holiday Manager ===== */
+  .holiday-list {
+    list-style: none;
+  }
+  .holiday-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--color-border);
+    font-size: 13px;
+  }
+  .holiday-item:last-child { border-bottom: none; }
+  .holiday-item .holi-name {
+    font-weight: 600;
+    min-width: 70px;
+    flex-shrink: 0;
+  }
+  .holiday-item .holi-dates {
+    color: var(--color-text-secondary);
+    flex: 1;
+  }
+  .holiday-item .holi-del {
+    background: none;
+    border: none;
+    color: var(--color-red);
+    cursor: pointer;
+    font-size: 16px;
+    padding: 0 4px;
+    opacity: 0.6;
+    transition: opacity var(--transition);
+  }
+  .holiday-item .holi-del:hover { opacity: 1; }
+
+  .add-holiday-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--color-border);
+  }
+  .form-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .form-input {
+    flex: 1;
+    min-width: 120px;
+    padding: 7px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    font-size: 13px;
+    font-family: inherit;
+  }
+  .form-input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+  }
+
+  /* ===== Settings Modal ===== */
+  .settings-section {
+    margin-bottom: 20px;
+  }
+  .settings-section:last-child { margin-bottom: 0; }
+  .settings-section h3 {
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 10px;
+    color: var(--color-text);
+  }
+  .setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 0;
+    gap: 12px;
+  }
+  .setting-label {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+  }
+  .setting-input {
+    width: 80px;
+    padding: 5px 10px;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    font-size: 13px;
+    text-align: center;
+  }
+
+  /* ===== Toast ===== */
+  .toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .toast {
+    padding: 10px 16px;
+    border-radius: var(--radius);
+    background: var(--color-text);
+    color: white;
+    font-size: 13px;
+    box-shadow: var(--shadow-lg);
+    animation: toastIn 0.3s ease, toastOut 0.3s ease 2.7s;
+    max-width: 320px;
+  }
+  .toast.success { background: var(--color-green); }
+  .toast.warn { background: var(--color-yellow); color: var(--color-text); }
+  .toast.error { background: var(--color-red); }
+  @keyframes toastIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+  @keyframes toastOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+  }
+
+  /* ===== Tooltip ===== */
+  .day-cell .tooltip {
+    position: absolute;
+    bottom: calc(100% + 6px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--color-text);
+    color: white;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+    z-index: 100;
+  }
+  .day-cell .tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: var(--color-text);
+  }
+  .day-cell:hover .tooltip { opacity: 1; }
+
+  /* ===== Print ===== */
+  @media print {
+    .header-actions, .quick-actions, .btn { display: none !important; }
+    .app { max-width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app" id="app">
+  <!-- Header -->
+  <header class="header">
+    <div class="header-left">
+      <span class="logo">🏢</span>
+      <h1>Hybrid Work Calendar</h1>
+    </div>
+    <div class="header-actions">
+      <select class="year-select" id="yearSelect"></select>
+      <button class="btn btn-sm" onclick="openSettings()" title="设置">⚙️</button>
+    </div>
+  </header>
+
+  <!-- Stats Panel -->
+  <section class="stats-panel" id="statsPanel">
+    <div class="stats-grid">
+      <div class="stat-card" id="weekStats">
+        <div class="stat-card-header">
+          <span class="stat-card-title">📊 本周统计</span>
+          <span class="stat-card-summary" id="weekSummary"></span>
+        </div>
+        <div class="progress-bar" id="weekProgress"></div>
+        <div class="stat-numbers" id="weekNumbers"></div>
+      </div>
+      <div class="stat-card" id="monthStats">
+        <div class="stat-card-header">
+          <span class="stat-card-title">📈 本月统计</span>
+          <span class="stat-card-summary" id="monthSummary"></span>
+        </div>
+        <div class="progress-bar" id="monthProgress"></div>
+        <div class="stat-numbers" id="monthNumbers"></div>
+        <div class="remote-remaining" id="remoteRemaining"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Calendar -->
+  <section class="calendar-card">
+    <div class="calendar-nav">
+      <span class="month-title" id="monthTitle"></span>
+      <div class="nav-btns">
+        <button class="btn btn-icon" onclick="navMonth(-1)" title="上个月">◀</button>
+        <button class="btn btn-sm" onclick="goToday()">📍 今天</button>
+        <button class="btn btn-icon" onclick="navMonth(1)" title="下个月">▶</button>
+      </div>
+    </div>
+    <div class="calendar-grid" id="calendarGrid"></div>
+    <div class="legend">
+      <div class="legend-item"><div class="legend-color" style="background:#dbeafe"></div>到岗</div>
+      <div class="legend-item"><div class="legend-color" style="background:#dcfce7"></div>居家</div>
+      <div class="legend-item"><div class="legend-color" style="background:#ffedd5"></div>请假</div>
+      <div class="legend-item"><div class="legend-color" style="background:#f3f4f6"></div>周末</div>
+      <div class="legend-item"><div class="legend-color" style="background:#fee2e2"></div>假日</div>
+      <div class="legend-item"><div class="legend-color" style="background:white;border:2px dashed #e5e7eb"></div>待标记</div>
+    </div>
+  </section>
+
+  <!-- Quick Actions -->
+  <div class="quick-actions">
+    <button class="btn" onclick="exportJSON()">📤 导出备份 (JSON)</button>
+    <button class="btn" onclick="document.getElementById('importFile').click()">📥 导入备份 (JSON)</button>
+    <button class="btn" onclick="exportCSV()">📊 导出月度报表 (CSV)</button>
+    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importJSON(event)">
+  </div>
+</div>
+
+<!-- Mark Modal -->
+<div class="modal-overlay" id="markModal">
+  <div class="modal mark-panel">
+    <div class="modal-header">
+      <h2 id="markModalTitle">标记办公模式</h2>
+      <button class="modal-close" onclick="closeMarkModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="mode-options" id="modeOptions">
+        <div class="mode-option" data-mode="office" onclick="selectMode('office')">
+          <span class="mode-icon">🏢</span>
+          <span class="mode-name">到岗办公</span>
+        </div>
+        <div class="mode-option" data-mode="remote" onclick="selectMode('remote')">
+          <span class="mode-icon">🏠</span>
+          <span class="mode-name">居家办公</span>
+        </div>
+        <div class="mode-option" data-mode="leave" onclick="selectMode('leave')">
+          <span class="mode-icon">📝</span>
+          <span class="mode-name">个人请假</span>
+        </div>
+      </div>
+      <label class="note-label">备注（选填）</label>
+      <textarea class="note-input" id="markNote" placeholder="如：客户来访、团队会议..."></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="clearMark()">清除标记</button>
+      <button class="btn btn-primary" onclick="confirmMark()">确认</button>
+    </div>
+  </div>
+</div>
+
+<!-- Holiday Modal -->
+<div class="modal-overlay" id="holidayModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>🎉 节假日管理</h2>
+      <button class="modal-close" onclick="closeHolidayModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <ul class="holiday-list" id="holidayList"></ul>
+      <div class="add-holiday-form">
+        <h3 style="font-size:14px;font-weight:700;">添加假期</h3>
+        <div class="form-row">
+          <input class="form-input" id="holiName" placeholder="假期名称" />
+        </div>
+        <div class="form-row">
+          <input class="form-input" type="date" id="holiStart" />
+          <span style="align-self:center;font-size:13px;color:var(--color-text-secondary)">至</span>
+          <input class="form-input" type="date" id="holiEnd" />
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="addHoliday()" style="align-self:flex-start">添加</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Settings Modal -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal">
+    <div class="modal-header">
+      <h2>⚙️ 设置</h2>
+      <button class="modal-close" onclick="closeSettings()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="settings-section">
+        <h3>办公比例设置</h3>
+        <div class="setting-row">
+          <span class="setting-label">到岗比例</span>
+          <input class="setting-input" type="number" id="officeRatio" min="0" max="100" />
+        </div>
+        <div class="setting-row">
+          <span class="setting-label">居家比例</span>
+          <input class="setting-input" type="number" id="remoteRatio" min="0" max="100" />
+        </div>
+      </div>
+      <div class="settings-section">
+        <h3>工作日设置</h3>
+        <div class="setting-row">
+          <span class="setting-label">调休补班日是否视为工作日</span>
+          <label style="display:flex;align-items:center;gap:4px;cursor:pointer">
+            <input type="checkbox" id="followAdjustment" />
+            <span style="font-size:12px;color:var(--color-text-secondary)">跟随调休</span>
+          </label>
+        </div>
+      </div>
+      <div class="settings-section">
+        <h3>数据管理</h3>
+        <div class="setting-row">
+          <span class="setting-label">清除所有打卡记录</span>
+          <button class="btn btn-sm" style="color:var(--color-red);border-color:var(--color-red)" onclick="clearAllData()">清除数据</button>
+        </div>
+        <div class="setting-row">
+          <span class="setting-label">节假日管理</span>
+          <button class="btn btn-sm" onclick="closeSettings();openHolidayModal()">管理节假日</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-primary" onclick="saveSettings()">保存设置</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// ========================================================
+//  Hybrid Work Calendar - 混合办公日历
+//  Pure HTML/CSS/JS, Zero Dependencies
+// ========================================================
+
+// ===== Constants =====
+const WEEKDAY_NAMES = ['一', '二', '三', '四', '五', '六', '日'];
+const WEEKDAY_FULL = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+const MONTH_NAMES = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+const MODE_ICONS = { office: '🏢', remote: '🏠', leave: '📝', null: '' };
+const MODE_LABELS = { office: '到岗', remote: '居家', leave: '请假', null: '' };
+const STORAGE_KEY = 'hwc_data';
+const STORAGE_CONFIG_KEY = 'hwc_config';
+
+// ===== Default 2026 Holidays =====
+const DEFAULT_HOLIDAYS_2026 = [
+  // 元旦: 1月1日 (1天)
+  { name: '元旦', dates: ['2026-01-01'] },
+  // 春节: 农历除夕、正月初一至初三 (4天)
+  // 2026年春节: 2月16日(除夕) ~ 2月19日(初三)
+  { name: '春节', dates: ['2026-02-16','2026-02-17','2026-02-18','2026-02-19'] },
+  // 清明节: 农历清明当日 (1天)
+  { name: '清明节', dates: ['2026-04-05'] },
+  // 劳动节: 5月1日、2日 (2天)
+  { name: '劳动节', dates: ['2026-05-01','2026-05-02'] },
+  // 端午节: 农历端午当日 (1天)
+  { name: '端午节', dates: ['2026-06-19'] },
+  // 中秋节: 农历中秋当日 (1天)
+  { name: '中秋节', dates: ['2026-10-04'] },
+  // 国庆节: 10月1日、2日、3日 (3天)
+  { name: '国庆节', dates: ['2026-10-01','2026-10-02','2026-10-03'] },
+];
+
+// ===== State =====
+let state = {
+  currentYear: new Date().getFullYear(),
+  currentMonth: new Date().getMonth(), // 0-based
+  holidays: {},   // { '2026': DEFAULT_HOLIDAYS_2026, ... }
+  records: {},    // { '2026-04-29': { workMode: 'office', note: '...' }, ... }
+  config: {
+    officeRatio: 60,
+    remoteRatio: 40,
+    followAdjustment: false,
+  }
+};
+
+// ===== Utility Functions =====
+function pad(n) { return String(n).padStart(2, '0'); }
+
+function dateKey(y, m, d) {
+  return `${y}-${pad(m + 1)}-${pad(d)}`;
+}
+
+function todayKey() {
+  const d = new Date();
+  return dateKey(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+function parseKey(key) {
+  const [y, m, d] = key.split('-').map(Number);
+  return { year: y, month: m - 1, day: d };
+}
+
+function getDaysInMonth(y, m) {
+  return new Date(y, m + 1, 0).getDate();
+}
+
+function getDayOfWeek(y, m, d) {
+  // 0=Sun, 1=Mon, ..., 6=Sat
+  return new Date(y, m, d).getDay();
+}
+
+function isWeekend(y, m, d) {
+  const dow = getDayOfWeek(y, m, d);
+  return dow === 0 || dow === 6;
+}
+
+function getHolidaySet(year) {
+  const list = state.holidays[year] || [];
+  const set = new Set();
+  for (const h of list) {
+    for (const d of h.dates) {
+      set.add(d);
+    }
+  }
+  return set;
+}
+
+function getHolidayInfo(year, month, day) {
+  const key = dateKey(year, month, day);
+  const list = state.holidays[year] || [];
+  for (const h of list) {
+    if (h.dates.includes(key)) return h.name;
+  }
+  return null;
+}
+
+function isHoliday(y, m, d) {
+  return getHolidayInfo(y, m, d) !== null;
+}
+
+function isWorkday(y, m, d) {
+  if (isWeekend(y, m, d)) {
+    // If follow adjustment is on and the weekend day is a holiday, still not workday
+    // (PRD rule: 调休补班的周六周日不视为工作日)
+    return false;
+  }
+  if (isHoliday(y, m, d)) return false;
+  return true;
+}
+
+function getRecord(key) {
+  return state.records[key] || null;
+}
+
+// ===== Statistics =====
+function calcStats(year, month) {
+  const days = getDaysInMonth(year, month);
+  const holiSet = getHolidaySet(year);
+  let totalWorkdays = 0, office = 0, remote = 0, leave = 0, unmarked = 0;
+
+  for (let d = 1; d <= days; d++) {
+    if (!isWorkday(year, month, d)) continue;
+    totalWorkdays++;
+    const key = dateKey(year, month, d);
+    const rec = state.records[key];
+    if (!rec || !rec.workMode) { unmarked++; }
+    else if (rec.workMode === 'office') { office++; }
+    else if (rec.workMode === 'remote') { remote++; }
+    else if (rec.workMode === 'leave') { leave++; }
+  }
+
+  const maxRemote = Math.floor(totalWorkdays * (state.config.remoteRatio / 100));
+  const remaining = maxRemote - remote;
+  const remoteRatio = totalWorkdays > 0 ? remote / totalWorkdays * 100 : 0;
+  const officeRatio = totalWorkdays > 0 ? office / totalWorkdays * 100 : 0;
+
+  let ratioStatus = 'ok';
+  if (remote > maxRemote) ratioStatus = 'warn';
+  else if (remote === maxRemote) ratioStatus = 'caution';
+
+  return { totalWorkdays, office, remote, leave, unmarked, maxRemote, remaining, remoteRatio, officeRatio, ratioStatus };
+}
+
+function calcWeekStats(year, month, weekStartDay) {
+  // weekStartDay: the Monday of the week (can be in prev/next month)
+  let totalWorkdays = 0, office = 0, remote = 0, leave = 0, unmarked = 0;
+
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(weekStartDay);
+    d.setDate(d.getDate() + i);
+    const y = d.getFullYear(), m = d.getMonth(), day = d.getDate();
+    if (!isWorkday(y, m, day)) continue;
+    totalWorkdays++;
+    const key = dateKey(y, m, day);
+    const rec = state.records[key];
+    if (!rec || !rec.workMode) { unmarked++; }
+    else if (rec.workMode === 'office') { office++; }
+    else if (rec.workMode === 'remote') { remote++; }
+    else if (rec.workMode === 'leave') { leave++; }
+  }
+
+  const maxRemote = Math.floor(totalWorkdays * (state.config.remoteRatio / 100));
+  const remaining = maxRemote - remote;
+
+  let ratioStatus = 'ok';
+  if (remote > maxRemote) ratioStatus = 'warn';
+  else if (remote === maxRemote) ratioStatus = 'caution';
+
+  return { totalWorkdays, office, remote, leave, unmarked, maxRemote, remaining, ratioStatus };
+}
+
+function getMondayOfWeek(y, m, d) {
+  const dt = new Date(y, m, d);
+  const dow = dt.getDay(); // 0=Sun, 1=Mon ...
+  const diff = dow === 0 ? -6 : 1 - dow;
+  const monday = new Date(dt);
+  monday.setDate(dt.getDate() + diff);
+  monday.setHours(0, 0, 0, 0);
+  return monday;
+}
+
+// ===== Render Stats =====
+function renderStats() {
+  const y = state.currentYear, m = state.currentMonth;
+
+  // Month stats
+  const ms = calcStats(y, m);
+  renderProgressBar('monthProgress', ms, 'month');
+  document.getElementById('monthNumbers').innerHTML = `
+    <span class="stat-num"><span class="stat-dot dot-office"></span>到岗 ${ms.office}天</span>
+    <span class="stat-num"><span class="stat-dot dot-remote"></span>居家 ${ms.remote}天</span>
+    <span class="stat-num"><span class="stat-dot dot-leave"></span>请假 ${ms.leave}天</span>
+    <span class="stat-num"><span class="stat-dot dot-unmarked"></span>待标记 ${ms.unmarked}天</span>
+  `;
+  const remainEl = document.getElementById('remoteRemaining');
+  if (ms.remaining > 0) {
+    remainEl.innerHTML = `剩余居家天数：<strong style="color:var(--color-green)">${ms.remaining}天</strong>（共${ms.totalWorkdays}个工作日，最多居家${ms.maxRemote}天）`;
+  } else if (ms.remaining === 0) {
+    remainEl.innerHTML = `剩余居家天数：<strong style="color:var(--color-yellow)">0天（已满额）</strong>（共${ms.totalWorkdays}个工作日）`;
+  } else {
+    remainEl.innerHTML = `剩余居家天数：<strong style="color:var(--color-red)">超限${Math.abs(ms.remaining)}天 ⚠️</strong>（共${ms.totalWorkdays}个工作日，最多居家${ms.maxRemote}天）`;
+  }
+
+  // Summary text
+  const monthSumEl = document.getElementById('monthSummary');
+  if (ms.ratioStatus === 'warn') {
+    monthSumEl.innerHTML = '<span class="warn">⚠️ 超限</span>';
+  } else if (ms.ratioStatus === 'caution') {
+    monthSumEl.innerHTML = '<span class="caution">⚠ 已满额</span>';
+  } else {
+    monthSumEl.innerHTML = '<span class="ok">✓ 正常</span>';
+  }
+
+  // Week stats - find the week containing today (or the first workday of the month if today not in view)
+  const today = new Date();
+  let targetDay;
+  if (y === today.getFullYear() && m === today.getMonth()) {
+    targetDay = today.getDate();
+  } else {
+    // Find first workday of the displayed month
+    for (let d = 1; d <= getDaysInMonth(y, m); d++) {
+      if (isWorkday(y, m, d)) { targetDay = d; break; }
+    }
+    if (!targetDay) targetDay = 1;
+  }
+  const monday = getMondayOfWeek(y, m, targetDay);
+  const ws = calcWeekStats(monday.getFullYear(), monday.getMonth(), monday.getDate());
+  renderProgressBar('weekProgress', ws, 'week');
+  document.getElementById('weekNumbers').innerHTML = `
+    <span class="stat-num"><span class="stat-dot dot-office"></span>到岗 ${ws.office}天</span>
+    <span class="stat-num"><span class="stat-dot dot-remote"></span>居家 ${ws.remote}天</span>
+    <span class="stat-num"><span class="stat-dot dot-leave"></span>请假 ${ws.leave}天</span>
+    <span class="stat-num"><span class="stat-dot dot-unmarked"></span>待标记 ${ws.unmarked}天</span>
+  `;
+
+  const weekSumEl = document.getElementById('weekSummary');
+  if (ws.ratioStatus === 'warn') {
+    weekSumEl.innerHTML = '<span class="warn">⚠️ 超限</span>';
+  } else if (ws.ratioStatus === 'caution') {
+    weekSumEl.innerHTML = '<span class="caution">⚠ 已满额</span>';
+  } else {
+    weekSumEl.innerHTML = '<span class="ok">✓ 正常</span>';
+  }
+}
+
+function renderProgressBar(containerId, stats, type) {
+  const el = document.getElementById(containerId);
+
+  if (stats.totalWorkdays === 0) {
+    el.className = 'progress-bar';
+    el.innerHTML = '<div style="padding:4px 12px;font-size:11px;color:var(--color-text-secondary)">无工作日</div>';
+    return;
+  }
+
+  const total = stats.totalWorkdays;
+  const op = stats.office / total * 100;
+  const rp = stats.remote / total * 100;
+  const lp = stats.leave / total * 100;
+  const up = stats.unmarked / total * 100;
+
+  el.className = 'progress-bar';
+  if (stats.ratioStatus === 'warn') el.classList.add('warn');
+  else if (stats.ratioStatus === 'caution') el.classList.add('caution');
+
+  let html = '';
+  if (stats.office > 0) html += `<div class="seg seg-office" style="width:${op}%">${op >= 12 ? '🏢 ' + stats.office : ''}</div>`;
+  if (stats.remote > 0) html += `<div class="seg seg-remote" style="width:${rp}%">${rp >= 12 ? '🏠 ' + stats.remote : ''}</div>`;
+  if (stats.leave > 0) html += `<div class="seg seg-leave" style="width:${lp}%">${lp >= 12 ? '📝 ' + stats.leave : ''}</div>`;
+  if (stats.unmarked > 0) html += `<div class="seg seg-unmarked" style="width:${up}%">${up >= 12 ? '· ' + stats.unmarked : ''}</div>`;
+  el.innerHTML = html;
+}
+
+// ===== Render Calendar =====
+function renderCalendar() {
+  const y = state.currentYear, m = state.currentMonth;
+  const daysInMonth = getDaysInMonth(y, m);
+  const firstDay = getDayOfWeek(y, m, 1); // 0=Sun
+  // Convert to Mon=0, Tue=1, ..., Sun=6
+  const startOffset = firstDay === 0 ? 6 : firstDay - 1;
+
+  const todayStr = todayKey();
+
+  // Title
+  document.getElementById('monthTitle').textContent = `${y}年${m + 1}月`;
+
+  const grid = document.getElementById('calendarGrid');
+
+  // Day headers
+  let html = '';
+  WEEKDAY_NAMES.forEach((name, i) => {
+    const cls = i >= 5 ? 'day-header weekend' : 'day-header';
+    html += `<div class="${cls}">${name}</div>`;
+  });
+
+  // Previous month fill
+  const prevMonth = m === 0 ? 11 : m - 1;
+  const prevYear = m === 0 ? y - 1 : y;
+  const prevDays = getDaysInMonth(prevYear, prevMonth);
+  for (let i = startOffset - 1; i >= 0; i--) {
+    const d = prevDays - i;
+    html += `<div class="day-cell other-month"><span class="day-num">${d}</span></div>`;
+  }
+
+  // Current month days
+  for (let d = 1; d <= daysInMonth; d++) {
+    const key = dateKey(y, m, d);
+    const weekend = isWeekend(y, m, d);
+    const holiday = isHoliday(y, m, d);
+    const workday = isWorkday(y, m, d);
+    const rec = getRecord(key);
+    const holiName = getHolidayInfo(y, m, d);
+    const isToday = key === todayStr;
+
+    let cellClass = 'day-cell';
+    if (isToday) cellClass += ' today';
+
+    if (holiday) {
+      cellClass += ' holiday';
+    } else if (weekend) {
+      cellClass += ' weekend';
+    } else if (rec && rec.workMode === 'office') {
+      cellClass += ' office';
+    } else if (rec && rec.workMode === 'remote') {
+      cellClass += ' remote';
+    } else if (rec && rec.workMode === 'leave') {
+      cellClass += ' leave';
+    } else if (workday) {
+      cellClass += ' unmarked-workday';
+    }
+
+    // Build display content
+    let icon = '';
+    let label = '';
+    if (holiday) {
+      icon = '🎉';
+      label = holiName || '';
+    } else if (weekend) {
+      icon = '😴';
+    } else if (rec && rec.workMode) {
+      icon = MODE_ICONS[rec.workMode] || '';
+    }
+
+    // Tooltip
+    let tooltipText = `${m+1}月${d}日 ${WEEKDAY_FULL[getDayOfWeek(y,m,d)]}`;
+    if (holiday) tooltipText += ` | ${holiName}`;
+    else if (workday) {
+      if (rec && rec.workMode) {
+        tooltipText += ` | ${MODE_LABELS[rec.workMode]}`;
+        if (rec.note) tooltipText += ` | ${rec.note}`;
+      } else {
+        tooltipText += ' | 待标记';
+      }
+    } else if (weekend) {
+      tooltipText += ' | 休息日';
+    }
+
+    const clickHandler = workday ? `onclick="openMarkModal('${key}')"` : '';
+    const contextHandler = workday ? `oncontextmenu="handleRightClick(event, '${key}')"` : '';
+
+    html += `<div class="${cellClass}" ${clickHandler} ${contextHandler}>
+      <span class="tooltip">${tooltipText}</span>
+      <span class="day-num">${d}</span>
+      ${icon ? `<span class="day-icon">${icon}</span>` : ''}
+      ${label ? `<span class="day-label">${label}</span>` : ''}
+    </div>`;
+  }
+
+  // Next month fill
+  const totalCells = startOffset + daysInMonth;
+  const remaining = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+  for (let d = 1; d <= remaining; d++) {
+    html += `<div class="day-cell other-month"><span class="day-num">${d}</span></div>`;
+  }
+
+  grid.innerHTML = html;
+}
+
+// ===== Navigation =====
+function navMonth(delta) {
+  state.currentMonth += delta;
+  if (state.currentMonth > 11) { state.currentMonth = 0; state.currentYear++; updateYearSelect(); }
+  if (state.currentMonth < 0) { state.currentMonth = 11; state.currentYear--; updateYearSelect(); }
+  render();
+}
+
+function goToday() {
+  const d = new Date();
+  state.currentYear = d.getFullYear();
+  state.currentMonth = d.getMonth();
+  updateYearSelect();
+  render();
+}
+
+function updateYearSelect() {
+  document.getElementById('yearSelect').value = state.currentYear;
+}
+
+// ===== Mark Modal =====
+let markModalDate = null;
+
+function openMarkModal(dateStr) {
+  markModalDate = dateStr;
+  const rec = getRecord(dateStr);
+  const { year, month, day } = parseKey(dateStr);
+
+  document.getElementById('markModalTitle').textContent = `${month + 1}月${day}日 - 标记办公模式`;
+  document.getElementById('markNote').value = rec ? (rec.note || '') : '';
+
+  // Set active mode
+  document.querySelectorAll('#modeOptions .mode-option').forEach(el => {
+    el.className = 'mode-option';
+  });
+  if (rec && rec.workMode) {
+    const el = document.querySelector(`[data-mode="${rec.workMode}"]`);
+    if (el) el.classList.add(`active-${rec.workMode}`);
+  }
+
+  document.getElementById('markModal').classList.add('active');
+}
+
+function closeMarkModal() {
+  document.getElementById('markModal').classList.remove('active');
+  markModalDate = null;
+}
+
+function selectMode(mode) {
+  document.querySelectorAll('#modeOptions .mode-option').forEach(el => {
+    el.className = 'mode-option';
+  });
+  const el = document.querySelector(`[data-mode="${mode}"]`);
+  if (el) el.classList.add(`active-${mode}`);
+}
+
+function confirmMark() {
+  if (!markModalDate) return;
+  const activeEl = document.querySelector('#modeOptions .mode-option[class*="active-"]');
+  if (!activeEl) {
+    showToast('请选择办公模式', 'warn');
+    return;
+  }
+  const mode = activeEl.dataset.mode;
+  const note = document.getElementById('markNote').value.trim();
+
+  state.records[markModalDate] = { workMode: mode, note: note, checkedIn: mode === 'office' };
+  saveData();
+  closeMarkModal();
+  render();
+  showToast(`已标记为${MODE_LABELS[mode]}`, 'success');
+}
+
+function clearMark() {
+  if (!markModalDate) return;
+  delete state.records[markModalDate];
+  saveData();
+  closeMarkModal();
+  render();
+  showToast('已清除标记', 'success');
+}
+
+// ===== Right-click quick toggle =====
+function handleRightClick(e, dateStr) {
+  e.preventDefault();
+  const rec = getRecord(dateStr);
+  const { month, day } = parseKey(dateStr);
+  let nextMode;
+  // Cycle: unmarked -> office -> remote -> leave -> clear
+  if (!rec || !rec.workMode) nextMode = 'office';
+  else if (rec.workMode === 'office') nextMode = 'remote';
+  else if (rec.workMode === 'remote') nextMode = 'leave';
+  else nextMode = null;
+
+  if (nextMode) {
+    state.records[dateStr] = { workMode: nextMode, note: rec ? (rec.note || '') : '', checkedIn: nextMode === 'office' };
+    showToast(`${month + 1}月${day}日 → ${MODE_LABELS[nextMode]}`, 'success');
+  } else {
+    delete state.records[dateStr];
+    showToast(`${month + 1}月${day}日 → 已清除`, 'success');
+  }
+  saveData();
+  render();
+}
+
+// ===== Holiday Modal =====
+function openHolidayModal() {
+  const list = document.getElementById('holidayList');
+  const year = state.currentYear;
+  const holidays = state.holidays[year] || [];
+
+  if (holidays.length === 0) {
+    list.innerHTML = '<li style="padding:12px 0;color:var(--color-text-secondary);font-size:13px">暂无节假日数据</li>';
+  } else {
+    list.innerHTML = holidays.map((h, i) => `
+      <li class="holiday-item">
+        <span class="holi-name">${h.name}</span>
+        <span class="holi-dates">${h.dates[0]} ~ ${h.dates[h.dates.length - 1]}（${h.dates.length}天）</span>
+        <button class="holi-del" onclick="deleteHoliday(${i})" title="删除">✕</button>
+      </li>
+    `).join('');
+  }
+
+  document.getElementById('holiName').value = '';
+  document.getElementById('holiStart').value = '';
+  document.getElementById('holiEnd').value = '';
+  document.getElementById('holidayModal').classList.add('active');
+}
+
+function closeHolidayModal() {
+  document.getElementById('holidayModal').classList.remove('active');
+}
+
+function addHoliday() {
+  const name = document.getElementById('holiName').value.trim();
+  const start = document.getElementById('holiStart').value;
+  const end = document.getElementById('holiEnd').value;
+
+  if (!name || !start || !end) {
+    showToast('请填写完整信息', 'warn');
+    return;
+  }
+  if (start > end) {
+    showToast('结束日期不能早于开始日期', 'warn');
+    return;
+  }
+
+  const dates = [];
+  const cur = new Date(start + 'T00:00:00');
+  const endDt = new Date(end + 'T00:00:00');
+  while (cur <= endDt) {
+    dates.push(cur.toISOString().slice(0, 10));
+    cur.setDate(cur.getDate() + 1);
+  }
+
+  const year = state.currentYear;
+  if (!state.holidays[year]) state.holidays[year] = [];
+  state.holidays[year].push({ name, dates });
+  saveData();
+  openHolidayModal(); // refresh
+  render();
+  showToast(`已添加「${name}」`, 'success');
+}
+
+function deleteHoliday(index) {
+  const year = state.currentYear;
+  if (state.holidays[year]) {
+    const name = state.holidays[year][index].name;
+    state.holidays[year].splice(index, 1);
+    saveData();
+    openHolidayModal(); // refresh
+    render();
+    showToast(`已删除「${name}」`, 'success');
+  }
+}
+
+// ===== Settings Modal =====
+function openSettings() {
+  document.getElementById('officeRatio').value = state.config.officeRatio;
+  document.getElementById('remoteRatio').value = state.config.remoteRatio;
+  document.getElementById('followAdjustment').checked = state.config.followAdjustment;
+  document.getElementById('settingsModal').classList.add('active');
+}
+
+function closeSettings() {
+  document.getElementById('settingsModal').classList.remove('active');
+}
+
+function saveSettings() {
+  const officeVal = document.getElementById('officeRatio').value.trim();
+  const remoteVal = document.getElementById('remoteRatio').value.trim();
+  if (!/^\d+$/.test(officeVal) || !/^\d+$/.test(remoteVal)) {
+    showToast('比例必须为整数', 'error');
+    return;
+  }
+  const office = parseInt(officeVal);
+  const remote = parseInt(remoteVal);
+  const follow = document.getElementById('followAdjustment').checked;
+
+  if (isNaN(office) || isNaN(remote) || office + remote !== 100 || office < 0 || remote < 0) {
+    showToast('比例设置无效：到岗+居家须等于100%', 'error');
+    return;
+  }
+
+  state.config.officeRatio = office;
+  state.config.remoteRatio = remote;
+  state.config.followAdjustment = follow;
+  saveData();
+  closeSettings();
+  render();
+  showToast('设置已保存', 'success');
+}
+
+function clearAllData() {
+  if (!confirm('确定要清除所有打卡记录吗？节假日和设置将保留。此操作不可撤销。')) return;
+  state.records = {};
+  saveData();
+  render();
+  showToast('所有打卡记录已清除', 'success');
+}
+
+// ===== Data Persistence =====
+function saveData() {
+  try {
+    const data = {
+      version: 2,
+      records: state.records,
+      holidays: state.holidays,
+      config: state.config,
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch (e) {
+    showToast('数据保存失败：' + e.message, 'error');
+  }
+}
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const data = JSON.parse(raw);
+      state.records = data.records || {};
+      state.holidays = data.holidays || {};
+      if (data.config) {
+        state.config = { ...state.config, ...data.config };
+      }
+      // Migration: reset 2026 holidays if version < 2 (old data had expanded holiday dates)
+      if (!data.version || data.version < 2) {
+        state.holidays[2026] = JSON.parse(JSON.stringify(DEFAULT_HOLIDAYS_2026));
+      }
+    }
+  } catch (e) {
+    console.error('Load data error:', e);
+    showToast('本地数据加载异常，已使用默认配置', 'warn');
+  }
+
+  // Ensure current year has holiday data
+  const y = state.currentYear;
+  if (!state.holidays[y] || state.holidays[y].length === 0) {
+    if (y === 2026) {
+      state.holidays[2026] = JSON.parse(JSON.stringify(DEFAULT_HOLIDAYS_2026));
+    }
+  }
+}
+
+// ===== Export / Import =====
+function exportJSON() {
+  const data = {
+    version: '1.0',
+    exportedAt: new Date().toISOString(),
+    records: state.records,
+    holidays: state.holidays,
+    config: state.config,
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `hybrid-work-calendar-backup-${todayKey()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('备份文件已导出', 'success');
+}
+
+function importJSON(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (typeof data.records === 'object' && data.records !== null && !Array.isArray(data.records)) {
+        state.records = data.records;
+      }
+      if (typeof data.holidays === 'object' && data.holidays !== null) {
+        state.holidays = data.holidays;
+      }
+      if (data.config) state.config = { ...state.config, ...data.config };
+      saveData();
+      render();
+      showToast('数据已成功导入', 'success');
+    } catch (err) {
+      showToast('导入失败：文件格式无效', 'error');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = ''; // reset
+}
+
+function exportCSV() {
+  const y = state.currentYear, m = state.currentMonth;
+  const days = getDaysInMonth(y, m);
+  let csv = '\uFEFF日期,星期,办公模式,是否上班,备注\n'; // BOM for Excel
+
+  for (let d = 1; d <= days; d++) {
+    const key = dateKey(y, m, d);
+    const dow = getDayOfWeek(y, m, d);
+    const wkday = WEEKDAY_FULL[dow];
+    const holiday = getHolidayInfo(y, m, d);
+    const weekend = isWeekend(y, m, d);
+    const rec = getRecord(key);
+
+    let mode = '';
+    let checkedIn = '';
+    if (holiday) {
+      mode = '节假日';
+      checkedIn = '否';
+    } else if (weekend) {
+      mode = '休息日';
+      checkedIn = '否';
+    } else if (rec && rec.workMode) {
+      mode = MODE_LABELS[rec.workMode];
+      checkedIn = rec.workMode === 'office' ? '是' : '否';
+    } else {
+      mode = '待标记';
+      checkedIn = '否';
+    }
+
+    const note = (rec && rec.note) ? rec.note.replace(/,/g, '，') : '';
+    csv += `${key},${wkday},${mode},${checkedIn},${note}\n`;
+  }
+
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `出勤报表-${y}-${pad(m+1)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('月度报表已导出', 'success');
+}
+
+// ===== Toast =====
+function showToast(msg, type = 'info') {
+  const container = document.getElementById('toastContainer');
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = msg;
+  container.appendChild(el);
+  setTimeout(() => { if (el.parentNode) el.parentNode.removeChild(el); }, 3000);
+}
+
+// ===== Master Render =====
+function render() {
+  renderCalendar();
+  renderStats();
+}
+
+// ===== Year Select =====
+function initYearSelect() {
+  const select = document.getElementById('yearSelect');
+  const currentYear = new Date().getFullYear();
+  for (let y = currentYear - 5; y <= currentYear + 5; y++) {
+    const opt = document.createElement('option');
+    opt.value = y;
+    opt.textContent = y + '年';
+    select.appendChild(opt);
+  }
+  select.value = state.currentYear;
+  select.addEventListener('change', function() {
+    state.currentYear = parseInt(this.value);
+    state.currentMonth = 0;
+    // Load default holidays if needed
+    if (!state.holidays[state.currentYear] || state.holidays[state.currentYear].length === 0) {
+      if (state.currentYear === 2026) {
+        state.holidays[2026] = JSON.parse(JSON.stringify(DEFAULT_HOLIDAYS_2026));
+        saveData();
+      }
+    }
+    render();
+  });
+}
+
+// ===== Close modals on overlay click =====
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', function(e) {
+    if (e.target === this) {
+      this.classList.remove('active');
+    }
+  });
+});
+
+// ===== Keyboard shortcuts =====
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.modal-overlay.active').forEach(el => el.classList.remove('active'));
+  }
+  const noTarget = !e.target.matches('input,textarea,select');
+  const noModal = !document.querySelector('.modal-overlay.active');
+  if (noTarget && noModal) {
+    if (e.key === 'ArrowLeft') navMonth(-1);
+    if (e.key === 'ArrowRight') navMonth(1);
+  }
+});
+
+// ===== Init =====
+function init() {
+  loadData();
+  initYearSelect();
+  render();
+}
+
+init();
+</script>
+</body>
+</html>
