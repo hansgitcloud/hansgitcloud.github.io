@@ -479,17 +479,49 @@
     color: var(--color-text-secondary);
     flex: 1;
   }
+  .holiday-item .holi-edit-input {
+    padding: 3px 8px;
+    border: 1px solid var(--color-primary);
+    border-radius: 4px;
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+    min-width: 80px;
+  }
+  .holiday-item .holi-edit-input[type="date"] {
+    min-width: 130px;
+  }
+  .holiday-item .holi-actions {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+    align-items: center;
+  }
+  .holiday-item .holi-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: background var(--transition);
+  }
+  .holiday-item .holi-btn:hover { background: var(--color-gray-light); }
+  .holiday-item .holi-btn-edit { color: var(--color-primary); }
+  .holiday-item .holi-btn-save { color: var(--color-green); }
+  .holiday-item .holi-btn-cancel { color: var(--color-text-secondary); }
   .holiday-item .holi-del {
     background: none;
     border: none;
     color: var(--color-red);
     cursor: pointer;
     font-size: 16px;
-    padding: 0 4px;
+    padding: 2px 6px;
     opacity: 0.6;
     transition: opacity var(--transition);
+    border-radius: 4px;
   }
-  .holiday-item .holi-del:hover { opacity: 1; }
+  .holiday-item .holi-del:hover { opacity: 1; background: var(--color-red-light); }
 
   .add-holiday-form {
     display: flex;
@@ -677,6 +709,7 @@
 
   <!-- Quick Actions -->
   <div class="quick-actions">
+    <button class="btn" onclick="openHolidayModal()" title="管理节假日（添加/删除法定假日、自定义假期）">🎉 节假日管理</button>
     <button class="btn" onclick="exportJSON()">📤 导出备份 (JSON)</button>
     <button class="btn" onclick="document.getElementById('importFile').click()">📥 导入备份 (JSON)</button>
     <button class="btn" onclick="exportCSV()">📊 导出月度报表 (CSV)</button>
@@ -1276,23 +1309,11 @@ function handleRightClick(e, dateStr) {
 }
 
 // ===== Holiday Modal =====
+let holidayEditingIdx = -1; // track which row is being edited, -1 = none
+
 function openHolidayModal() {
-  const list = document.getElementById('holidayList');
-  const year = state.currentYear;
-  const holidays = state.holidays[year] || [];
-
-  if (holidays.length === 0) {
-    list.innerHTML = '<li style="padding:12px 0;color:var(--color-text-secondary);font-size:13px">暂无节假日数据</li>';
-  } else {
-    list.innerHTML = holidays.map((h, i) => `
-      <li class="holiday-item">
-        <span class="holi-name">${h.name}</span>
-        <span class="holi-dates">${h.dates[0]} ~ ${h.dates[h.dates.length - 1]}（${h.dates.length}天）</span>
-        <button class="holi-del" onclick="deleteHoliday(${i})" title="删除">✕</button>
-      </li>
-    `).join('');
-  }
-
+  holidayEditingIdx = -1;
+  renderHolidayList();
   document.getElementById('holiName').value = '';
   document.getElementById('holiStart').value = '';
   document.getElementById('holiEnd').value = '';
@@ -1300,7 +1321,114 @@ function openHolidayModal() {
 }
 
 function closeHolidayModal() {
+  holidayEditingIdx = -1;
   document.getElementById('holidayModal').classList.remove('active');
+}
+
+function renderHolidayList() {
+  const list = document.getElementById('holidayList');
+  const year = state.currentYear;
+  const holidays = state.holidays[year] || [];
+
+  if (holidays.length === 0) {
+    list.innerHTML = '<li style="padding:12px 0;color:var(--color-text-secondary);font-size:13px">暂无节假日数据</li>';
+    return;
+  }
+
+  list.innerHTML = holidays.map((h, i) => {
+    const isEditing = (holidayEditingIdx === i);
+    if (isEditing) {
+      // Edit mode: render inline inputs
+      return `
+        <li class="holiday-item">
+          <input class="holi-edit-input" id="editHoliName_${i}" value="${escHtml(h.name)}" placeholder="假期名称" />
+          <input class="holi-edit-input" type="date" id="editHoliStart_${i}" value="${h.dates[0]}" />
+          <span style="align-self:center;font-size:12px;color:var(--color-text-secondary)">至</span>
+          <input class="holi-edit-input" type="date" id="editHoliEnd_${i}" value="${h.dates[h.dates.length - 1]}" />
+          <div class="holi-actions">
+            <button class="holi-btn holi-btn-save" onclick="saveHolidayEdit(${i})" title="保存">✔</button>
+            <button class="holi-btn holi-btn-cancel" onclick="cancelHolidayEdit()" title="取消">✕</button>
+          </div>
+        </li>
+      `;
+    } else {
+      // Display mode
+      const dateRange = h.dates.length === 1
+        ? h.dates[0]
+        : `${h.dates[0]} ~ ${h.dates[h.dates.length - 1]}（${h.dates.length}天）`;
+      return `
+        <li class="holiday-item">
+          <span class="holi-name">${escHtml(h.name)}</span>
+          <span class="holi-dates">${dateRange}</span>
+          <div class="holi-actions">
+            <button class="holi-btn holi-btn-edit" onclick="startHolidayEdit(${i})" title="编辑">✎</button>
+            <button class="holi-del" onclick="deleteHoliday(${i})" title="删除">✕</button>
+          </div>
+        </li>
+      `;
+    }
+  }).join('');
+}
+
+function escHtml(str) {
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+function startHolidayEdit(index) {
+  holidayEditingIdx = index;
+  renderHolidayList();
+  // Focus the name input
+  const nameInput = document.getElementById(`editHoliName_${index}`);
+  if (nameInput) nameInput.focus();
+}
+
+function cancelHolidayEdit() {
+  holidayEditingIdx = -1;
+  renderHolidayList();
+}
+
+function saveHolidayEdit(index) {
+  const year = state.currentYear;
+  if (!state.holidays[year] || !state.holidays[year][index]) return;
+
+  const nameEl = document.getElementById(`editHoliName_${index}`);
+  const startEl = document.getElementById(`editHoliStart_${index}`);
+  const endEl = document.getElementById(`editHoliEnd_${index}`);
+
+  const name = nameEl ? nameEl.value.trim() : '';
+  const start = startEl ? startEl.value : '';
+  const end = endEl ? endEl.value : '';
+
+  if (!name) {
+    showToast('假期名称不能为空', 'warn');
+    return;
+  }
+  if (!start || !end) {
+    showToast('请选择完整的日期范围', 'warn');
+    return;
+  }
+  if (start > end) {
+    showToast('结束日期不能早于开始日期', 'warn');
+    return;
+  }
+
+  // Rebuild dates array
+  const dates = [];
+  const cur = new Date(start + 'T00:00:00');
+  const endDt = new Date(end + 'T00:00:00');
+  while (cur <= endDt) {
+    dates.push(cur.toISOString().slice(0, 10));
+    cur.setDate(cur.getDate() + 1);
+  }
+
+  state.holidays[year][index] = { name, dates };
+  holidayEditingIdx = -1;
+  saveData();
+  renderHolidayList();
+  render();
+  showToast(`已更新「${name}」`, 'success');
 }
 
 function addHoliday() {
@@ -1329,7 +1457,7 @@ function addHoliday() {
   if (!state.holidays[year]) state.holidays[year] = [];
   state.holidays[year].push({ name, dates });
   saveData();
-  openHolidayModal(); // refresh
+  renderHolidayList();
   render();
   showToast(`已添加「${name}」`, 'success');
 }
@@ -1340,7 +1468,8 @@ function deleteHoliday(index) {
     const name = state.holidays[year][index].name;
     state.holidays[year].splice(index, 1);
     saveData();
-    openHolidayModal(); // refresh
+    holidayEditingIdx = -1;
+    renderHolidayList();
     render();
     showToast(`已删除「${name}」`, 'success');
   }
