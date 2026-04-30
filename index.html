@@ -976,7 +976,6 @@ function getRecord(key) {
 // ===== Statistics =====
 function calcStats(year, month) {
   const days = getDaysInMonth(year, month);
-  const holiSet = getHolidaySet(year);
   let totalWorkdays = 0, office = 0, remote = 0, leave = 0, unmarked = 0;
 
   for (let d = 1; d <= days; d++) {
@@ -990,16 +989,16 @@ function calcStats(year, month) {
     else if (rec.workMode === 'leave') { leave++; }
   }
 
-  const maxRemote = Math.floor(totalWorkdays * (state.config.remoteRatio / 100));
+  // 请假天数不纳入有效工作日基数（视为当天不上班）
+  const effectiveWorkdays = totalWorkdays - leave;
+  const maxRemote = Math.floor(effectiveWorkdays * (state.config.remoteRatio / 100));
   const remaining = maxRemote - remote;
-  const remoteRatio = totalWorkdays > 0 ? remote / totalWorkdays * 100 : 0;
-  const officeRatio = totalWorkdays > 0 ? office / totalWorkdays * 100 : 0;
 
   let ratioStatus = 'ok';
   if (remote > maxRemote) ratioStatus = 'warn';
   else if (remote === maxRemote) ratioStatus = 'caution';
 
-  return { totalWorkdays, office, remote, leave, unmarked, maxRemote, remaining, remoteRatio, officeRatio, ratioStatus };
+  return { totalWorkdays: effectiveWorkdays, rawWorkdays: totalWorkdays, office, remote, leave, unmarked, maxRemote, remaining, ratioStatus };
 }
 
 function calcWeekStats(year, month, weekStartDay) {
@@ -1020,14 +1019,16 @@ function calcWeekStats(year, month, weekStartDay) {
     else if (rec.workMode === 'leave') { leave++; }
   }
 
-  const maxRemote = Math.floor(totalWorkdays * (state.config.remoteRatio / 100));
+  // 请假天数不纳入有效工作日基数
+  const effectiveWorkdays = totalWorkdays - leave;
+  const maxRemote = Math.floor(effectiveWorkdays * (state.config.remoteRatio / 100));
   const remaining = maxRemote - remote;
 
   let ratioStatus = 'ok';
   if (remote > maxRemote) ratioStatus = 'warn';
   else if (remote === maxRemote) ratioStatus = 'caution';
 
-  return { totalWorkdays, office, remote, leave, unmarked, maxRemote, remaining, ratioStatus };
+  return { totalWorkdays: effectiveWorkdays, rawWorkdays: totalWorkdays, office, remote, leave, unmarked, maxRemote, remaining, ratioStatus };
 }
 
 function getMondayOfWeek(y, m, d) {
@@ -1057,12 +1058,13 @@ function renderStats() {
     <span class="stat-num"><span class="stat-dot dot-unmarked"></span>待标记 ${ms.unmarked}天</span>
   `;
   const remainEl = document.getElementById('remoteRemaining');
+  const leaveNote = ms.leave > 0 ? `，已请假${ms.leave}天` : '';
   if (ms.remaining > 0) {
-    remainEl.innerHTML = `剩余居家天数：<strong style="color:var(--color-green)">${ms.remaining}天</strong>（共${ms.totalWorkdays}个工作日，最多居家${ms.maxRemote}天）`;
+    remainEl.innerHTML = `剩余居家天数：<strong style="color:var(--color-green)">${ms.remaining}天</strong>（有效工作日${ms.totalWorkdays}天${leaveNote}，最多居家${ms.maxRemote}天）`;
   } else if (ms.remaining === 0) {
-    remainEl.innerHTML = `剩余居家天数：<strong style="color:var(--color-yellow)">0天（已满额）</strong>（共${ms.totalWorkdays}个工作日）`;
+    remainEl.innerHTML = `剩余居家天数：<strong style="color:var(--color-yellow)">0天（已满额）</strong>（有效工作日${ms.totalWorkdays}天${leaveNote}）`;
   } else {
-    remainEl.innerHTML = `剩余居家天数：<strong style="color:var(--color-red)">超限${Math.abs(ms.remaining)}天 ⚠️</strong>（共${ms.totalWorkdays}个工作日，最多居家${ms.maxRemote}天）`;
+    remainEl.innerHTML = `剩余居家天数：<strong style="color:var(--color-red)">超限${Math.abs(ms.remaining)}天 ⚠️</strong>（有效工作日${ms.totalWorkdays}天${leaveNote}，最多居家${ms.maxRemote}天）`;
   }
 
   // Summary text
@@ -1107,11 +1109,14 @@ function renderStats() {
 
   // Add week date range and target info below numbers
   const weekInfoEl = document.getElementById('weekInfo');
-  if (ws.totalWorkdays === 0) {
+  if (ws.totalWorkdays === 0 && ws.leave === 0) {
     weekInfoEl.innerHTML = `${mondayStr}-${sundayStr} | 本周无工作日`;
+  } else if (ws.totalWorkdays === 0 && ws.leave > 0) {
+    weekInfoEl.innerHTML = `${mondayStr}-${sundayStr} | 本周已全部请假`;
   } else {
     const officeDone = ws.office >= targetOffice;
-    weekInfoEl.innerHTML = `${mondayStr}-${sundayStr} | 共${ws.totalWorkdays}个工作日，到岗目标<strong style="color:${officeDone ? 'var(--color-green)' : 'var(--color-text)'}">${targetOffice}天</strong>`;
+    const leaveNote = ws.leave > 0 ? `，已请假${ws.leave}天` : '';
+    weekInfoEl.innerHTML = `${mondayStr}-${sundayStr} | 有效工作日${ws.totalWorkdays}天${leaveNote}，到岗目标<strong style="color:${officeDone ? 'var(--color-green)' : 'var(--color-text)'}">${targetOffice}天</strong>`;
   }
 
   const weekSumEl = document.getElementById('weekSummary');
