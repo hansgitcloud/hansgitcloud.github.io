@@ -1138,13 +1138,13 @@ function renderProgressBar(containerId, stats, type) {
     return;
   }
 
-  const total = stats.totalWorkdays;
+  // 进度条只显示有效工作日（到岗/居家/待标记），请假不纳入进度条
+  const total = stats.totalWorkdays; // 已扣除请假的有效工作日
   const op = stats.office / total * 100;
   const rp = stats.remote / total * 100;
-  const lp = stats.leave / total * 100;
   const up = stats.unmarked / total * 100;
 
-  // Calculate target line position (office ratio)
+  // 目标竖线位置 = officeRatio%（到岗比例）
   const targetPct = state.config.officeRatio;
 
   el.className = 'progress-bar';
@@ -1154,9 +1154,8 @@ function renderProgressBar(containerId, stats, type) {
   let html = '';
   if (stats.office > 0) html += `<div class="seg seg-office" style="width:${op}%">${op >= 12 ? '🏢 ' + stats.office : ''}</div>`;
   if (stats.remote > 0) html += `<div class="seg seg-remote" style="width:${rp}%">${rp >= 12 ? '🏠 ' + stats.remote : ''}</div>`;
-  if (stats.leave > 0) html += `<div class="seg seg-leave" style="width:${lp}%">${lp >= 12 ? '📝 ' + stats.leave : ''}</div>`;
   if (stats.unmarked > 0) html += `<div class="seg seg-unmarked" style="width:${up}%">${up >= 12 ? '· ' + stats.unmarked : ''}</div>`;
-  // Target marker line
+  // Target marker line（请假不占进度条，目标线位置准确）
   html += `<div class="target-line" style="left:${targetPct}%"></div>`;
   el.innerHTML = html;
 }
