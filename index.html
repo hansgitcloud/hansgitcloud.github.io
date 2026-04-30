@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Hybrid Work Calendar - 混合办公日历</title>
 <style>
   /* ===== CSS Variables ===== */
@@ -40,6 +40,8 @@
     color: var(--color-text);
     line-height: 1.5;
     min-height: 100vh;
+    overscroll-behavior-y: contain;
+    -webkit-tap-highlight-color: transparent;
   }
 
   /* ===== Layout ===== */
@@ -666,6 +668,272 @@
     border-top-color: var(--color-text);
   }
   .day-cell:hover .tooltip { opacity: 1; }
+
+  /* ===== Mobile Responsive ===== */
+  @media (max-width: 767px) {
+    /* App */
+    .app { padding: 8px 6px; }
+
+    /* Header */
+    .header {
+      margin-bottom: 12px;
+      gap: 8px;
+    }
+    .header-left h1 {
+      font-size: 16px;
+    }
+    .header-left .logo { font-size: 20px; }
+    .header-actions {
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .year-select {
+      padding: 4px 8px;
+      font-size: 13px;
+    }
+
+    /* Stats Panel */
+    .stats-panel {
+      padding: 10px 12px;
+      margin-bottom: 12px;
+    }
+    .stat-card {
+      padding: 8px 10px;
+    }
+    .stat-card-header {
+      margin-bottom: 6px;
+    }
+    .stat-card-title {
+      font-size: 11px;
+    }
+    .stat-card-summary {
+      font-size: 11px;
+    }
+    .progress-bar {
+      height: 16px;
+      border-radius: 8px;
+    }
+    .progress-bar .seg {
+      font-size: 9px;
+    }
+    .progress-wrapper .target-label {
+      font-size: 9px;
+    }
+    .stat-numbers {
+      gap: 10px;
+      margin-top: 6px;
+    }
+    .stat-num {
+      font-size: 11px;
+    }
+    .remote-remaining,
+    .week-info {
+      font-size: 11px;
+      margin-top: 6px;
+    }
+
+    /* Calendar */
+    .calendar-card {
+      padding: 8px 4px;
+      margin-bottom: 12px;
+    }
+    .calendar-nav {
+      margin-bottom: 10px;
+    }
+    .calendar-nav .month-title {
+      font-size: 15px;
+    }
+    .calendar-grid {
+      gap: 1px;
+    }
+    .calendar-grid .day-header {
+      font-size: 10px;
+      padding: 4px 0;
+    }
+    .day-cell {
+      min-height: 42px !important;
+      border-radius: 4px;
+      border-width: 1.5px;
+      padding: 2px 0;
+      touch-action: manipulation;
+    }
+    .day-cell:hover {
+      box-shadow: none;
+      transform: none;
+    }
+    .day-cell.today {
+      box-shadow: none;
+    }
+    .day-num {
+      font-size: 12px;
+    }
+    .day-icon {
+      font-size: 11px;
+      margin-top: 0;
+    }
+    .day-label {
+      font-size: 8px;
+      max-width: 42px;
+    }
+
+    /* Legend */
+    .legend {
+      gap: 8px;
+      margin-top: 8px;
+      padding-top: 8px;
+    }
+    .legend-item {
+      font-size: 10px;
+      gap: 3px;
+    }
+    .legend-color {
+      width: 10px;
+      height: 10px;
+    }
+
+    /* Quick Actions */
+    .quick-actions {
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+    .quick-actions .btn {
+      padding: 6px 10px;
+      font-size: 12px;
+      flex: 1 1 auto;
+      min-width: calc(50% - 3px);
+      justify-content: center;
+    }
+    .btn-sm { padding: 4px 8px; font-size: 11px; }
+
+    /* Modal */
+    .modal {
+      width: 95%;
+      max-height: 90vh;
+      border-radius: 10px;
+      /* safe-area for iPhone X+ */
+      padding-bottom: env(safe-area-inset-bottom, 0);
+    }
+    .modal-header {
+      padding: 12px 14px;
+    }
+    .modal-header h2 {
+      font-size: 15px;
+    }
+    .modal-body {
+      padding: 14px;
+    }
+    .modal-footer {
+      padding: 10px 14px;
+      padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    }
+
+    /* Mark Panel */
+    .mark-panel .mode-options {
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+    .mode-option {
+      padding: 10px 4px;
+      gap: 4px;
+      touch-action: manipulation;
+    }
+    .mode-option .mode-icon { font-size: 20px; }
+    .mode-option .mode-name { font-size: 11px; }
+
+    /* Holiday Manager */
+    .holiday-item {
+      gap: 8px;
+      padding: 8px 0;
+      font-size: 12px;
+      flex-wrap: wrap;
+    }
+    .holiday-item .holi-name { min-width: 56px; font-size: 12px; }
+    .holiday-item .holi-dates { font-size: 11px; }
+    .holiday-item .holi-edit-input { font-size: 12px; min-width: 60px; }
+    .holiday-item .holi-edit-input[type="date"] { min-width: 110px; }
+    .holiday-item .holi-actions { width: 100%; justify-content: flex-end; padding-left: 68px; }
+
+    .add-holiday-form {
+      gap: 8px;
+      margin-top: 12px;
+      padding-top: 12px;
+    }
+    .form-row {
+      gap: 6px;
+    }
+    .form-input {
+      font-size: 12px;
+      min-width: 100px;
+      padding: 6px 10px;
+    }
+
+    /* Settings */
+    .settings-section h3 { font-size: 13px; margin-bottom: 8px; }
+    .setting-label { font-size: 12px; }
+    .setting-input { width: 60px; font-size: 12px; }
+
+    /* Toast */
+    .toast-container {
+      top: auto;
+      bottom: 20px;
+      right: 10px;
+      left: 10px;
+      align-items: center;
+    }
+    .toast {
+      max-width: 100%;
+      text-align: center;
+    }
+
+    /* Hide tooltip on mobile (use tap instead) */
+    .day-cell .tooltip { display: none; }
+  }
+
+  /* Extra small screens (≤ 374px) */
+  @media (max-width: 374px) {
+    .app { padding: 6px 4px; }
+    .header-left h1 { font-size: 14px; }
+    .header-left .logo { font-size: 18px; }
+    .year-select { font-size: 12px; padding: 3px 6px; }
+
+    /* Stats */
+    .stats-panel { padding: 8px; }
+    .stat-card { padding: 6px 8px; }
+    .stat-card-title { font-size: 10px; letter-spacing: 0; }
+    .stat-card-summary { font-size: 10px; }
+    .progress-bar { height: 14px; }
+    .progress-bar .seg { font-size: 8px; }
+    .progress-wrapper .target-label { font-size: 8px; padding-top: 10px; }
+    .progress-wrapper { padding-top: 10px; }
+    .stat-numbers { gap: 6px; }
+    .stat-num { font-size: 10px; }
+    .remote-remaining, .week-info { font-size: 10px; }
+
+    /* Calendar */
+    .day-cell { min-height: 36px !important; }
+    .day-num { font-size: 11px; }
+    .day-icon { font-size: 10px; }
+    .day-label { font-size: 7px; max-width: 36px; }
+    .calendar-nav .month-title { font-size: 14px; }
+    .calendar-grid .day-header { font-size: 9px; }
+
+    /* Legend */
+    .legend { gap: 6px; }
+    .legend-item { font-size: 9px; }
+    .legend-color { width: 8px; height: 8px; }
+
+    /* Buttons */
+    .quick-actions .btn {
+      font-size: 11px;
+      padding: 5px 8px;
+    }
+
+    /* Modal */
+    .modal-header h2 { font-size: 14px; }
+    .modal-body { padding: 10px; }
+    .mode-option .mode-icon { font-size: 18px; }
+    .mode-option .mode-name { font-size: 10px; }
+  }
 
   /* ===== Print ===== */
   @media print {
