@@ -1340,9 +1340,9 @@ function renderStats() {
   if (ms.ratioStatus === 'warn') {
     monthSumEl.innerHTML = '<span class="warn">⚠️ 超限</span>';
   } else if (ms.ratioStatus === 'caution') {
-    monthSumEl.innerHTML = '<span class="caution">⚠ 已满额</span>';
+    monthSumEl.innerHTML = '<span class="ok">✓ 已满额</span>';
   } else {
-    monthSumEl.innerHTML = '<span class="ok">✓ 正常</span>';
+    monthSumEl.innerHTML = '<span class="caution">⚠ 未满额</span>';
   }
 
   // Week stats - find the week containing today (or the first workday of the month if today not in view)
@@ -1391,9 +1391,9 @@ function renderStats() {
   if (ws.ratioStatus === 'warn') {
     weekSumEl.innerHTML = '<span class="warn">⚠️ 超限</span>';
   } else if (ws.ratioStatus === 'caution') {
-    weekSumEl.innerHTML = '<span class="caution">⚠ 已满额</span>';
+    weekSumEl.innerHTML = '<span class="ok">✓ 已满额</span>';
   } else {
-    weekSumEl.innerHTML = '<span class="ok">✓ 正常</span>';
+    weekSumEl.innerHTML = '<span class="caution">⚠ 未满额</span>';
   }
 }
 
