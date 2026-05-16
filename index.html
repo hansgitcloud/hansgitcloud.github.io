@@ -187,7 +187,7 @@
   .seg-remote { background: var(--color-green); }
   .seg-leave { background: var(--color-orange); }
   .seg-unmarked { background: var(--color-gray); }
-  .progress-bar.warn .seg-office { background: var(--color-red); }
+  .progress-bar.warn .seg-remote { background: var(--color-red); }
   .progress-bar.caution .seg-office { background: var(--color-green); }
 
   /* Target marker line (vertical line showing office ratio target) */
@@ -1261,11 +1261,11 @@ function calcStats(year, month) {
   const effectiveWorkdays = totalWorkdays - leave;
   const maxRemote = Math.floor(effectiveWorkdays * (state.config.remoteRatio / 100));
   const remaining = maxRemote - remote;
-  // 到岗满额判断（ratioStatus 基于到岗）
   const targetOffice = Math.ceil(effectiveWorkdays * (state.config.officeRatio / 100));
 
+  // warn = 居家超限（最高限制），caution = 到岗已满额（最低达标），ok = 到岗未满额
   let ratioStatus = 'ok';
-  if (office > targetOffice) ratioStatus = 'warn';
+  if (remote > maxRemote) ratioStatus = 'warn';
   else if (office >= targetOffice && effectiveWorkdays > 0) ratioStatus = 'caution';
 
   return { totalWorkdays: effectiveWorkdays, rawWorkdays: totalWorkdays, office, remote, leave, unmarked, maxRemote, remaining, targetOffice, ratioStatus };
@@ -1293,11 +1293,11 @@ function calcWeekStats(year, month, weekStartDay) {
   const effectiveWorkdays = totalWorkdays - leave;
   const maxRemote = Math.floor(effectiveWorkdays * (state.config.remoteRatio / 100));
   const remaining = maxRemote - remote;
-  // 到岗满额判断（ratioStatus 基于到岗）
   const targetOffice = Math.ceil(effectiveWorkdays * (state.config.officeRatio / 100));
 
+  // warn = 居家超限（最高限制），caution = 到岗已满额（最低达标），ok = 到岗未满额
   let ratioStatus = 'ok';
-  if (office > targetOffice) ratioStatus = 'warn';
+  if (remote > maxRemote) ratioStatus = 'warn';
   else if (office >= targetOffice && effectiveWorkdays > 0) ratioStatus = 'caution';
 
   return { totalWorkdays: effectiveWorkdays, rawWorkdays: totalWorkdays, office, remote, leave, unmarked, maxRemote, remaining, targetOffice, ratioStatus };
