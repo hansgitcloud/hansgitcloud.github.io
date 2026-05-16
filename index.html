@@ -187,8 +187,8 @@
   .seg-remote { background: var(--color-green); }
   .seg-leave { background: var(--color-orange); }
   .seg-unmarked { background: var(--color-gray); }
-  .progress-bar.warn .seg-remote { background: var(--color-red); }
-  .progress-bar.caution .seg-remote { background: var(--color-yellow); }
+  .progress-bar.warn .seg-office { background: var(--color-red); }
+  .progress-bar.caution .seg-office { background: var(--color-green); }
 
   /* Target marker line (vertical line showing office ratio target) */
   .progress-bar .target-line {
@@ -1261,12 +1261,14 @@ function calcStats(year, month) {
   const effectiveWorkdays = totalWorkdays - leave;
   const maxRemote = Math.floor(effectiveWorkdays * (state.config.remoteRatio / 100));
   const remaining = maxRemote - remote;
+  // 到岗满额判断（ratioStatus 基于到岗）
+  const targetOffice = Math.ceil(effectiveWorkdays * (state.config.officeRatio / 100));
 
   let ratioStatus = 'ok';
-  if (remote > maxRemote) ratioStatus = 'warn';
-  else if (remote === maxRemote) ratioStatus = 'caution';
+  if (office > targetOffice) ratioStatus = 'warn';
+  else if (office >= targetOffice && effectiveWorkdays > 0) ratioStatus = 'caution';
 
-  return { totalWorkdays: effectiveWorkdays, rawWorkdays: totalWorkdays, office, remote, leave, unmarked, maxRemote, remaining, ratioStatus };
+  return { totalWorkdays: effectiveWorkdays, rawWorkdays: totalWorkdays, office, remote, leave, unmarked, maxRemote, remaining, targetOffice, ratioStatus };
 }
 
 function calcWeekStats(year, month, weekStartDay) {
@@ -1291,12 +1293,14 @@ function calcWeekStats(year, month, weekStartDay) {
   const effectiveWorkdays = totalWorkdays - leave;
   const maxRemote = Math.floor(effectiveWorkdays * (state.config.remoteRatio / 100));
   const remaining = maxRemote - remote;
+  // 到岗满额判断（ratioStatus 基于到岗）
+  const targetOffice = Math.ceil(effectiveWorkdays * (state.config.officeRatio / 100));
 
   let ratioStatus = 'ok';
-  if (remote > maxRemote) ratioStatus = 'warn';
-  else if (remote === maxRemote) ratioStatus = 'caution';
+  if (office > targetOffice) ratioStatus = 'warn';
+  else if (office >= targetOffice && effectiveWorkdays > 0) ratioStatus = 'caution';
 
-  return { totalWorkdays: effectiveWorkdays, rawWorkdays: totalWorkdays, office, remote, leave, unmarked, maxRemote, remaining, ratioStatus };
+  return { totalWorkdays: effectiveWorkdays, rawWorkdays: totalWorkdays, office, remote, leave, unmarked, maxRemote, remaining, targetOffice, ratioStatus };
 }
 
 function getMondayOfWeek(y, m, d) {
@@ -1315,7 +1319,7 @@ function renderStats() {
 
   // Month stats
   const ms = calcStats(y, m);
-  const monthTarget = Math.ceil(ms.totalWorkdays * (state.config.officeRatio / 100));
+  const monthTarget = ms.targetOffice;
   document.getElementById('monthTargetLabel').textContent = `到岗目标 ${state.config.officeRatio}%`;
   document.getElementById('monthTargetLabel').style.left = state.config.officeRatio + '%';
   renderProgressBar('monthProgress', ms, 'month');
@@ -1360,8 +1364,8 @@ function renderStats() {
   const monday = getMondayOfWeek(y, m, targetDay);
   const ws = calcWeekStats(monday.getFullYear(), monday.getMonth(), monday.getDate());
 
-  // Calculate target office days for the week (ceil)
-  const targetOffice = Math.ceil(ws.totalWorkdays * (state.config.officeRatio / 100));
+  // Calculate target office days for the week (from calcWeekStats)
+  const targetOffice = ws.targetOffice;
   document.getElementById('weekTargetLabel').textContent = `到岗目标 ${state.config.officeRatio}%`;
   document.getElementById('weekTargetLabel').style.left = state.config.officeRatio + '%';
   renderProgressBar('weekProgress', ws, 'week');
