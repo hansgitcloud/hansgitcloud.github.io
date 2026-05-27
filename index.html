@@ -215,18 +215,30 @@
   }
 
   .stat-numbers {
-    display: flex;
-    gap: 16px;
-    margin-top: 8px;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px 12px;
+    margin-top: 10px;
   }
   .stat-num {
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 5px;
     font-size: 12px;
     color: var(--color-text-secondary);
+    white-space: nowrap;
   }
+  .stat-num .stat-label {
+    color: var(--color-text-secondary);
+    flex-shrink: 0;
+  }
+  .stat-num .stat-val {
+    font-weight: 600;
+    color: var(--color-text);
+  }
+  .stat-num.highlight-green .stat-val { color: var(--color-green); }
+  .stat-num.highlight-yellow .stat-val { color: var(--color-yellow); }
+  .stat-num.highlight-red .stat-val { color: var(--color-red); }
   .stat-dot {
     width: 8px;
     height: 8px;
@@ -237,17 +249,19 @@
   .dot-remote { background: var(--color-green); }
   .dot-leave { background: var(--color-orange); }
   .dot-unmarked { background: var(--color-gray); }
+  .dot-target { background: var(--color-primary); opacity: 0.4; }
 
-  .remote-remaining,
-  .week-info {
-    margin-top: 8px;
-    font-size: 13px;
+  .stat-info {
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid var(--color-border);
+    font-size: 12px;
     color: var(--color-text-secondary);
+    line-height: 1.6;
   }
-  .remote-remaining strong,
-  .week-info strong {
-    color: var(--color-text);
-  }
+  .stat-info strong { color: var(--color-text); font-weight: 600; }
+  /* 兼容旧选择器 */
+  .remote-remaining, .week-info { display: none; }
 
   /* ===== Calendar ===== */
   .calendar-card {
@@ -720,16 +734,16 @@
       font-size: 9px;
     }
     .stat-numbers {
-      gap: 10px;
+      gap: 4px 8px;
       margin-top: 6px;
     }
     .stat-num {
       font-size: 11px;
     }
-    .remote-remaining,
-    .week-info {
+    .stat-info {
       font-size: 11px;
-      margin-top: 6px;
+      margin-top: 8px;
+      padding-top: 6px;
     }
 
     /* Calendar */
@@ -905,9 +919,9 @@
     .progress-bar .seg { font-size: 8px; }
     .progress-wrapper .target-label { font-size: 8px; padding-top: 10px; }
     .progress-wrapper { padding-top: 10px; }
-    .stat-numbers { gap: 6px; }
+    .stat-numbers { gap: 4px 6px; }
     .stat-num { font-size: 10px; }
-    .remote-remaining, .week-info { font-size: 10px; }
+    .stat-info { font-size: 10px; }
 
     /* Calendar */
     .day-cell { min-height: 36px !important; }
@@ -970,7 +984,7 @@
           <div class="progress-bar" id="weekProgress"></div>
         </div>
         <div class="stat-numbers" id="weekNumbers"></div>
-        <div class="week-info" id="weekInfo"></div>
+        <div class="stat-info" id="weekInfo"></div>
       </div>
       <div class="stat-card" id="monthStats">
         <div class="stat-card-header">
@@ -982,7 +996,7 @@
           <div class="progress-bar" id="monthProgress"></div>
         </div>
         <div class="stat-numbers" id="monthNumbers"></div>
-        <div class="remote-remaining" id="remoteRemaining"></div>
+        <div class="stat-info" id="remoteRemaining"></div>
       </div>
     </div>
   </section>
@@ -1324,22 +1338,18 @@ function renderStats() {
   document.getElementById('monthTargetLabel').style.left = state.config.officeRatio + '%';
   renderProgressBar('monthProgress', ms, 'month');
   const officeRemaining = Math.max(0, monthTarget - ms.office);
+  const remoteRemaining = ms.remaining;
   document.getElementById('monthNumbers').innerHTML = `
-    <span class="stat-num"><span class="stat-dot dot-office"></span>到岗 ${ms.office}天</span>
-    <span class="stat-num"><span class="stat-dot dot-remote"></span>居家 ${ms.remote}天</span>
-    <span class="stat-num"><span class="stat-dot dot-leave"></span>请假 ${ms.leave}天</span>
-    <span class="stat-num"><span class="stat-dot dot-unmarked"></span>待标记 ${ms.unmarked}天</span>
-    <span class="stat-num" style="color:${officeRemaining === 0 ? 'var(--color-green)' : 'var(--color-text-secondary)'}"><span class="stat-dot dot-office"></span>剩余到岗 ${officeRemaining}天</span>
+    <span class="stat-num"><span class="stat-dot dot-office"></span><span class="stat-label">到岗</span><span class="stat-val">${ms.office} 天</span></span>
+    <span class="stat-num ${officeRemaining === 0 ? 'highlight-green' : ''}"><span class="stat-dot dot-target"></span><span class="stat-label">剩余到岗</span><span class="stat-val">${officeRemaining} 天</span></span>
+    <span class="stat-num"><span class="stat-dot dot-remote"></span><span class="stat-label">居家</span><span class="stat-val">${ms.remote} 天</span></span>
+    <span class="stat-num ${remoteRemaining < 0 ? 'highlight-red' : remoteRemaining === 0 ? 'highlight-yellow' : ''}"><span class="stat-dot dot-target"></span><span class="stat-label">剩余居家</span><span class="stat-val">${remoteRemaining < 0 ? '超限' + Math.abs(remoteRemaining) : remoteRemaining} 天</span></span>
+    <span class="stat-num"><span class="stat-dot dot-leave"></span><span class="stat-label">请假</span><span class="stat-val">${ms.leave} 天</span></span>
+    <span class="stat-num"><span class="stat-dot dot-unmarked"></span><span class="stat-label">待标记</span><span class="stat-val">${ms.unmarked} 天</span></span>
   `;
   const remainEl = document.getElementById('remoteRemaining');
-  const leaveNote = ms.leave > 0 ? `，已请假${ms.leave}天` : '';
-  if (ms.remaining > 0) {
-    remainEl.innerHTML = `剩余居家天数：<strong style="color:var(--color-green)">${ms.remaining}天</strong>（有效工作日${ms.totalWorkdays}天${leaveNote}，最多居家${ms.maxRemote}天）`;
-  } else if (ms.remaining === 0) {
-    remainEl.innerHTML = `剩余居家天数：<strong style="color:var(--color-yellow)">0天（已满额）</strong>（有效工作日${ms.totalWorkdays}天${leaveNote}）`;
-  } else {
-    remainEl.innerHTML = `剩余居家天数：<strong style="color:var(--color-red)">超限${Math.abs(ms.remaining)}天 ⚠️</strong>（有效工作日${ms.totalWorkdays}天${leaveNote}，最多居家${ms.maxRemote}天）`;
-  }
+  const leaveNote = ms.leave > 0 ? `，已请假 ${ms.leave} 天` : '';
+  remainEl.innerHTML = `有效工作日 <strong>${ms.totalWorkdays} 天</strong>${leaveNote}，到岗目标 <strong>${monthTarget} 天</strong>，最多居家 <strong>${ms.maxRemote} 天</strong>`;
 
   // Summary text
   const monthSumEl = document.getElementById('monthSummary');
@@ -1375,22 +1385,23 @@ function renderStats() {
   const sundayStr = (() => { const s = new Date(monday); s.setDate(monday.getDate()+6); return `${s.getMonth()+1}/${s.getDate()}`; })();
 
   document.getElementById('weekNumbers').innerHTML = `
-    <span class="stat-num"><span class="stat-dot dot-office"></span>到岗 ${ws.office}/${targetOffice}天</span>
-    <span class="stat-num"><span class="stat-dot dot-remote"></span>居家 ${ws.remote}/${ws.maxRemote}天</span>
-    <span class="stat-num"><span class="stat-dot dot-leave"></span>请假 ${ws.leave}天</span>
-    <span class="stat-num"><span class="stat-dot dot-unmarked"></span>待标记 ${ws.unmarked}天</span>
+    <span class="stat-num"><span class="stat-dot dot-office"></span><span class="stat-label">到岗</span><span class="stat-val">${ws.office} / ${targetOffice} 天</span></span>
+    <span class="stat-num ${ws.office >= targetOffice ? 'highlight-green' : ''}"><span class="stat-dot dot-target"></span><span class="stat-label">剩余到岗</span><span class="stat-val">${Math.max(0, targetOffice - ws.office)} 天</span></span>
+    <span class="stat-num"><span class="stat-dot dot-remote"></span><span class="stat-label">居家</span><span class="stat-val">${ws.remote} / ${ws.maxRemote} 天</span></span>
+    <span class="stat-num"><span class="stat-dot dot-leave"></span><span class="stat-label">请假</span><span class="stat-val">${ws.leave} 天</span></span>
+    <span class="stat-num"><span class="stat-dot dot-unmarked"></span><span class="stat-label">待标记</span><span class="stat-val">${ws.unmarked} 天</span></span>
   `;
 
   // Add week date range and target info below numbers
   const weekInfoEl = document.getElementById('weekInfo');
   if (ws.totalWorkdays === 0 && ws.leave === 0) {
-    weekInfoEl.innerHTML = `${mondayStr}-${sundayStr} | 本周无工作日`;
+    weekInfoEl.innerHTML = `${mondayStr}–${sundayStr} · 本周无工作日`;
   } else if (ws.totalWorkdays === 0 && ws.leave > 0) {
-    weekInfoEl.innerHTML = `${mondayStr}-${sundayStr} | 本周已全部请假`;
+    weekInfoEl.innerHTML = `${mondayStr}–${sundayStr} · 本周已全部请假`;
   } else {
     const officeDone = ws.office >= targetOffice;
-    const leaveNote = ws.leave > 0 ? `，已请假${ws.leave}天` : '';
-    weekInfoEl.innerHTML = `${mondayStr}-${sundayStr} | 有效工作日${ws.totalWorkdays}天${leaveNote}，到岗目标<strong style="color:${officeDone ? 'var(--color-green)' : 'var(--color-text)'}">${targetOffice}天</strong>`;
+    const leaveNote = ws.leave > 0 ? `，已请假 ${ws.leave} 天` : '';
+    weekInfoEl.innerHTML = `${mondayStr}–${sundayStr} · 有效工作日 <strong>${ws.totalWorkdays} 天</strong>${leaveNote}，到岗目标 <strong style="color:${officeDone ? 'var(--color-green)' : 'var(--color-text)'}">${targetOffice} 天</strong>`;
   }
 
   const weekSumEl = document.getElementById('weekSummary');
