@@ -1323,11 +1323,13 @@ function renderStats() {
   document.getElementById('monthTargetLabel').textContent = `到岗目标 ${state.config.officeRatio}%`;
   document.getElementById('monthTargetLabel').style.left = state.config.officeRatio + '%';
   renderProgressBar('monthProgress', ms, 'month');
+  const officeRemaining = Math.max(0, monthTarget - ms.office);
   document.getElementById('monthNumbers').innerHTML = `
     <span class="stat-num"><span class="stat-dot dot-office"></span>到岗 ${ms.office}天</span>
     <span class="stat-num"><span class="stat-dot dot-remote"></span>居家 ${ms.remote}天</span>
     <span class="stat-num"><span class="stat-dot dot-leave"></span>请假 ${ms.leave}天</span>
     <span class="stat-num"><span class="stat-dot dot-unmarked"></span>待标记 ${ms.unmarked}天</span>
+    <span class="stat-num" style="color:${officeRemaining === 0 ? 'var(--color-green)' : 'var(--color-text-secondary)'}"><span class="stat-dot dot-office"></span>剩余到岗 ${officeRemaining}天</span>
   `;
   const remainEl = document.getElementById('remoteRemaining');
   const leaveNote = ms.leave > 0 ? `，已请假${ms.leave}天` : '';
